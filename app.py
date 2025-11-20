@@ -87,11 +87,11 @@ def search_pendle_markets(search_term: str) -> str:
             chainId = market.get('chainId', 'N/A')
 
             output_message += (
-                f"#{i} 市場名稱: **{name}**\n"
-                f"   - 鏈 ID: {chainId}\n"
-                f"   - 隱含 APY: {apy_display}\n"
-                f"   - 底層資產: {underlyingAsset}\n"
-                f"   - 市場地址 (Market ID): {market.get('address', 'N/A')}\n"
+                f"#{i} Token : **{name}**\n"
+                f"   - ChainID : {chainId}\n"
+                f"   - impliedApy : {apy_display}\n"
+                f"   - underlyingAsset : {underlyingAsset}\n"
+                f"   - MarketAddress : {market.get('address', 'N/A')}\n"
             )
             output_message += "----------------------------------------\n"
 
