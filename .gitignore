@@ -1,0 +1,13 @@
+Python 相關
+
+pycache/
+*.pyc
+venv/
+.mypy_cache/
+.pytest_cache/
+
+敏感資訊 / 環境變數
+
+!!! 這是關鍵：忽略包含您的 LINE 密鑰的本地檔案 !!!
+
+.env
