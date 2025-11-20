@@ -142,33 +142,48 @@ def callback():
         abort(400)
     return 'OK'
 
-# --- 處理文字訊息 ---
+# --- 處理文字訊息 (主要邏輯變動區塊) ---
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
     """處理用戶傳送的文字訊息"""
     text = event.message.text.strip()
+    result_message = ""
     
-    # 預期用戶輸入格式：[chain_id] [market_address]
     parts = text.split()
+    command = parts[0].lower() if parts else ''
     
-    if len(parts) == 2:
+    if command == 'search' and len(parts) >= 2:
+        # 新增功能：代幣名稱搜尋
+        search_term = " ".join(parts[1:]) # 允許代幣名稱包含空格 (儘管不太常見)
+        result_message = search_pendle_markets(search_term)
+        
+    elif len(parts) == 2 and parts[0].isdigit():
+        # 舊有功能：精確查詢 (Chain ID + Market Address)
         chain_id = parts[0]
         market = parts[1]
-        
-        # 呼叫您的核心函數
         result_message = get_pendle_prices(chain_id, market)
         
-    elif text.lower() == 'help':
-        result_message = "請輸入 Chain ID 和 Market Address，以空格隔開。\n範例：8453 0x53fb20ff03ef94ef224557cc6262e0f11c20f718"
+    elif command == 'help':
+        result_message = (
+            "🤖 Pendle Bot 指令清單：\n"
+            "----------------------------------------\n"
+            "1. **代幣市場搜索 (新功能)**：\n"
+            "   輸入：`search [代幣名稱]`\n"
+            "   範例：`search kaito`\n"
+            "\n"
+            "2. **精確價格查詢 (舊功能)**：\n"
+            "   輸入：`[Chain ID] [Market Address]`\n"
+            "   範例：`8453 0x53fb20ff03ef94ef224557cc6262e0f11c20f718`\n"
+        )
     else:
-        result_message = "輸入格式不正確。請輸入 'help' 查看範例。"
+        result_message = "輸入格式不正確。請輸入 'help' 查看指令清單。"
         
     line_bot_api.reply_message(
         event.reply_token,
         TextSendMessage(text=result_message)
     )
 
-if __name__ == "__main__":
-    # 預設在本機環境運行 (端口 8000)
-    port = int(os.environ.get('PORT', 8000))
-    app.run(host='0.0.0.0', port=port)
+# if __name__ == "__main__":
+#     # 預設在本機環境運行 (端口 8000)
+#     port = int(os.environ.get('PORT', 8000))
+#     app.run(host='0.0.0.0', port=port)
