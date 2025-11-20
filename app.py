@@ -81,19 +81,19 @@ def search_pendle_markets(search_term: str) -> str:
             # 格式化 APY 輸出 (此處 impliedApy 必定非 0)
             apy_display = "N/A"
             if isinstance(impliedApy, (int, float)):
-                 apy_display = f"**{impliedApy * 100:.2f}%**"
+                 apy_display = f"{impliedApy * 100:.2f}%"
             
             # 提取 chainId 供詳細查詢使用
             chainId = market.get('chainId', 'N/A')
 
             output_message += (
-                f"#{i} Token : **{name}**\n"
+                f"#{i} Token : {name}\n"
                 f"   - ChainID : {chainId}\n"
                 f"   - impliedApy : {apy_display}\n"
                 f"   - underlyingAsset : {underlyingAsset}\n"
                 f"   - MarketAddress : {market.get('address', 'N/A')}\n"
             )
-            output_message += "----------------------------------------\n"
+            output_message += "-----------------------------------------\n"
 
         return output_message
 
