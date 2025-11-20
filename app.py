@@ -20,6 +20,79 @@ app = Flask(__name__)
 line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
 
+# --- 新增功能：搜索所有市場並提取資訊 ---
+def search_pendle_markets(search_term: str) -> str:
+    """
+    呼叫 /markets/all API，根據代幣名稱搜索相關市場，
+    並提取 name, underlyingAsset, impliedApy。
+    """
+    API_HOST = "api-v2.pendle.finance"
+    API_PATH = "/core/v1/markets/all"
+    conn = None
+    
+    try:
+        conn = http.client.HTTPSConnection(API_HOST)
+        conn.request("GET", API_PATH)
+        res = conn.getresponse()
+        
+        if res.status != 200:
+            return f"❌ 市場列表查詢失敗，狀態碼: {res.status} {res.reason}"
+        
+        data = res.read()
+        all_data = json.loads(data.decode("utf-8"))
+        
+        search_term_lower = search_term.lower()
+        found_markets = []
+        
+        # 確保數據結構正確
+        if 'markets' in all_data and isinstance(all_data['markets'], list):
+            for market in all_data['markets']:
+                market_name = market.get('name', '')
+                
+                # 不區分大小寫的包含檢查
+                if search_term_lower in market_name.lower():
+                    found_markets.append(market)
+
+        if not found_markets:
+            return f"🤷 找不到包含 '{search_term}' 的相關市場。"
+
+        # 格式化輸出結果
+        output_message = f"🔎 找到 **{search_term}** 相關市場 ({len(found_markets)} 個):\n"
+        output_message += "----------------------------------------\n"
+        
+        for i, market in enumerate(found_markets, 1):
+            name = market.get('name', 'N/A')
+            underlyingAsset = market.get('underlyingAsset', 'N/A')
+            
+            # impliedApy 位於 'details' 字典中
+            details = market.get('details', {})
+            impliedApy = details.get('impliedApy', 'N/A')
+            
+            # 格式化 APY 輸出
+            apy_display = "N/A"
+            if isinstance(impliedApy, (int, float)):
+                 apy_display = f"**{impliedApy * 100:.2f}%**"
+            
+            # 提取 chainId 供詳細查詢使用
+            chainId = market.get('chainId', 'N/A')
+
+            output_message += (
+                f"#{i} 市場名稱: **{name}**\n"
+                f"   - 鏈 ID: {chainId}\n"
+                f"   - 隱含 APY: {apy_display}\n"
+                f"   - 底層資產: {underlyingAsset}\n"
+                f"   - 市場地址 (Market ID): {market.get('address', 'N/A')}\n"
+            )
+            output_message += "----------------------------------------\n"
+
+        return output_message
+
+    except Exception as e:
+        return f"🚨 搜尋市場時發生錯誤：{e}"
+    finally:
+        if conn:
+            conn.close()
+
 # --- 您的 API 核心邏輯 (將其封裝為一個函數) ---
 def get_pendle_prices(chain_id: str, market: str) -> str:
     """根據 chain_id 和 market 取得 Pendle 的價格數據並格式化"""
@@ -45,7 +118,6 @@ def get_pendle_prices(chain_id: str, market: str) -> str:
                 f"Market ID: {market}\n"
                 f"Implied APY: **{apy:.2f}%**\n"
                 f"Underlying -> PT Rate: **{pt_rate:.4f}**\n"
-                f"（更多數據請見原始 JSON）"
             )
             return message
         else:
