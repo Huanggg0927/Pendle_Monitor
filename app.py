@@ -25,7 +25,7 @@ def get_pendle_prices(chain_id: str, market: str) -> str:
     """根據 chain_id 和 market 取得 Pendle 的價格數據並格式化"""
     try:
         conn = http.client.HTTPSConnection("api-v2.pendle.finance")
-        path = f"/{chain_id}/markets/{market}/swapping-prices"
+        path = f"/core/v1/sdk/{chain_id}/markets/{market}/swapping-prices"
         conn.request("GET", path)
         res = conn.getresponse()
         
