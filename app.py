@@ -24,7 +24,7 @@ handler = WebhookHandler(LINE_CHANNEL_SECRET)
 def search_pendle_markets(search_term: str) -> str:
     """
     呼叫 /markets/all API，根據代幣名稱搜索相關市場，
-    並提取 name, underlyingAsset, impliedApy。
+    並提取 name, underlyingAsset, impliedApy (排除 Implied APY 為 0 的市場)。
     """
     API_HOST = "api-v2.pendle.finance"
     API_PATH = "/core/v1/markets/all"
@@ -49,12 +49,22 @@ def search_pendle_markets(search_term: str) -> str:
             for market in all_data['markets']:
                 market_name = market.get('name', '')
                 
-                # 不區分大小寫的包含檢查
+                # 步驟 1: 檢查名稱是否包含搜尋詞 (不區分大小寫)
                 if search_term_lower in market_name.lower():
-                    found_markets.append(market)
+                    
+                    # 獲取 impliedApy
+                    details = market.get('details', {})
+                    impliedApy = details.get('impliedApy', None) # 暫時設為 None
+                    
+                    # 步驟 2: 檢查 Implied APY 是否為 0
+                    # 如果 impliedApy 是數字型態 (float/int)，且值不等於 0
+                    if isinstance(impliedApy, (int, float)) and impliedApy != 0:
+                        found_markets.append(market)
+                    
+                    # 可選: 如果 impliedApy 是 0 或找不到 (None)，則跳過該市場。
 
         if not found_markets:
-            return f"🤷 找不到包含 '{search_term}' 的相關市場。"
+            return f"🤷 找不到包含 '{search_term}' 的相關市場，或所有找到的市場 Implied APY 皆為 0。"
 
         # 格式化輸出結果
         output_message = f"🔎 找到 **{search_term}** 相關市場 ({len(found_markets)} 個):\n"
@@ -68,7 +78,7 @@ def search_pendle_markets(search_term: str) -> str:
             details = market.get('details', {})
             impliedApy = details.get('impliedApy', 'N/A')
             
-            # 格式化 APY 輸出
+            # 格式化 APY 輸出 (此處 impliedApy 必定非 0)
             apy_display = "N/A"
             if isinstance(impliedApy, (int, float)):
                  apy_display = f"**{impliedApy * 100:.2f}%**"
